@@ -50,6 +50,18 @@ def ports():
             ports_collection.update_one({'_id': port['_id']}, {"$set": port}, upsert=True)
 
 
+def flows():
+    print('Get flows: %s' % datetime.now())
+
+    response = web_request(method_name='GET', url=api_url + "/flows", dict_data=None)
+
+    collection = db.get_collection('flows')
+
+    for device in response.get('flows'):
+        device['_id'] = device['id']
+        collection.update_one({'_id': device['_id']}, {'$set': device}, upsert=True)
+
+
 def web_request(method_name, url, dict_data, is_urlencoded=True):
     method_name = method_name.upper()
     if method_name not in ('GET', 'POST'):
@@ -76,6 +88,7 @@ if __name__ == '__main__':
     scheduler = BackgroundScheduler()
     scheduler.add_job(devices, 'interval', seconds=10)
     scheduler.add_job(ports, 'interval', seconds=10)
+    scheduler.add_job(flows, 'interval', seconds=10)
     scheduler.start()
     print('Press Ctrl+{0} to exit'.format('Break' if os.name == 'nt' else 'C'))
 
