@@ -4,18 +4,29 @@ import os
 import requests
 import json
 import pymongo
+import configparser
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
-conn = pymongo.MongoClient(host='192.168.12.116', port=27017,
-                           username='admin', password='admin', )
-db = conn.get_database('onos')
+config = configparser.ConfigParser()
+config.read('config.ini')
 
-api_url = 'http://192.168.103.229:8181/onos/v1'
+db_host = config['DB']['HOST']
+db_port = config['DB'].getint('PORT')
+db_database = config['DB']['DATABASE']
+db_username = config['DB']['USERNAME']
+db_password = config['DB']['PASSWORD']
+
+api_url = config['API']['URL']
+
+conn = pymongo.MongoClient(host=db_host, port=db_port,
+                           username=db_username, password=db_password, )
+db = conn.get_database(db_database)
 
 
 def devices():
     print('Get devices: %s' % datetime.now())
+
     response = web_request(method_name='GET', url=api_url + "/devices", dict_data=None)
 
     collection = db.get_collection('devices')
