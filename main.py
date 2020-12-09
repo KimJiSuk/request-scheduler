@@ -1,12 +1,10 @@
 from datetime import datetime
-import time
-import os
 import requests
 import json
 import pymongo
 import configparser
 
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.background import BlockingScheduler
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -23,7 +21,10 @@ conn = pymongo.MongoClient(host=db_host, port=db_port,
                            username=db_username, password=db_password, )
 db = conn.get_database(db_database)
 
+scheduler = BlockingScheduler()
 
+
+@scheduler.scheduled_job('interval', minutes=5, id='devices')
 def devices():
     print('Get devices: %s' % datetime.now())
 
@@ -36,6 +37,7 @@ def devices():
         collection.update_one({'_id': device['_id']}, {'$set': device}, upsert=True)
 
 
+@scheduler.scheduled_job('interval', minutes=5, id='ports')
 def ports():
     print('Get ports: %s' % datetime.now())
 
@@ -50,6 +52,7 @@ def ports():
             ports_collection.update_one({'_id': port['_id']}, {"$set": port}, upsert=True)
 
 
+@scheduler.scheduled_job('interval', minutes=5, id='flows')
 def flows():
     print('Get flows: %s' % datetime.now())
 
@@ -85,15 +88,8 @@ def web_request(method_name, url, dict_data, is_urlencoded=True):
 
 
 if __name__ == '__main__':
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(devices, 'interval', seconds=10)
-    scheduler.add_job(ports, 'interval', seconds=10)
-    scheduler.add_job(flows, 'interval', seconds=10)
+    print("scheduler start")
+    devices()
+    ports()
+    flows()
     scheduler.start()
-    print('Press Ctrl+{0} to exit'.format('Break' if os.name == 'nt' else 'C'))
-
-    try:
-        while True:
-            time.sleep(2)
-    except (KeyboardInterrupt, SystemExit):
-        scheduler.shutdown()
